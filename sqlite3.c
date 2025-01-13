@@ -17,6 +17,8 @@
 ** language. The code for the "sqlite3" command-line shell is also in a
 ** separate file. This file contains only code for the core SQLite library.
 */
+#include "timing.h"
+extern int dict_create_flag;
 #define SQLITE_CORE 1
 #define SQLITE_AMALGAMATION 1
 #ifndef SQLITE_PRIVATE
@@ -100584,7 +100586,12 @@ SQLITE_PRIVATE void sqlite3StartTable(
   Vdbe *v;
   int iDb;         /* Database number to create the table in */
   Token *pName;    /* Unqualified name of the table to create */
-
+#ifdef DICT_BENCHMARK
+  if (dict_create_flag) {
+    bench_start();
+    dict_create_flag = 0;
+  }
+#endif
   if( db->init.busy && db->init.newTnum==1 ){
     /* Special case:  Parsing the sqlite_master or sqlite_temp_master schema */
     iDb = db->init.iDb;
@@ -101745,6 +101752,9 @@ SQLITE_PRIVATE void sqlite3EndTable(
     );
     sqlite3DbFree(db, zStmt);
     sqlite3ChangeCookie(pParse, iDb);
+#ifdef DICT_BENCHMARK
+    bench_stop();
+#endif
 
 #ifndef SQLITE_OMIT_AUTOINCREMENT
     /* Check to see if we need to create an sqlite_sequence table for
@@ -137963,7 +137973,13 @@ static void yy_reduce(
         break;
       case 74: /* cmd ::= DROP TABLE ifexists fullname */
 {
+#ifdef DICT_BENCHMARK
+  bench_start();
+#endif
   sqlite3DropTable(pParse, yymsp[0].minor.yy185, 0, yymsp[-1].minor.yy194);
+#ifdef DICT_BENCHMARK
+  bench_stop();
+#endif
 }
         break;
       case 77: /* cmd ::= createkw temp VIEW ifnotexists nm dbnm eidlist_opt AS select */
@@ -138832,7 +138848,13 @@ static void yy_reduce(
         break;
       case 260: /* cmd ::= ALTER TABLE fullname RENAME TO nm */
 {
+#ifdef DICT_BENCHMARK
+  bench_start();
+#endif
   sqlite3AlterRenameTable(pParse,yymsp[-3].minor.yy185,&yymsp[0].minor.yy0);
+#ifdef DICT_BENCHMARK
+  bench_stop();
+#endif
 }
         break;
       case 261: /* cmd ::= ALTER TABLE add_column_fullname ADD kwcolumn_opt columnname carglist */
